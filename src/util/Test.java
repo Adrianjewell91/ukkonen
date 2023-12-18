@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Test {
     //For three unique characters. (2 regular and the terminating)
-    //Lines must be same length as the string.
+    //"Lines" Array must be same length as the string.
     public static void print3(Node tree, List<String> lines, int depth, String path, boolean isNewMiddle) {
         if (depth == lines.size()-1) {
             for (int i = 0; i<depth; i++) {
@@ -31,8 +31,7 @@ public class Test {
         print3(right, lines, depth+1, cleanPath + " ", true);
     }
 
-    //For three unique characters. (2 regular and the terminating), any level.
-    //Lines must be same length as the string.
+    // Does the exact some thing as above.
     public static void print3Middle(Node tree, List<String> lines, int depth) {
         if (depth < 0) {
             return;

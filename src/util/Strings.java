@@ -1,16 +1,18 @@
 package util;
 
 public class Strings {
-    //        String t = "aoeupyfguidhkjxbqjklrcgpaoeuqjkxsnthoeuilczqvwjkmaobeuwvmbqjkostenuhin";
+    public static String test2 = "xabcxabc";
+    public static String test1 = "abba";
+
+//        String t = "aoeupyfguidhkjxbqjklrcgpaoeuqjkxsnthoeuilczqvwjkmaobeuwvmbqjkostenuhin";
 //        String t = "fguidhpaoeczqvwjkmaenuhin";
 //        String t = "aoejkxsnthoeuilrclwvmbqjkostenuhin";
 //        String t = "abcdefghijklmnopqrstuvwxyz";
 //        String t = "abcdefghijklmn";
 //        String t = "abcdefghijklmnaopqrs";
 //        String t = "xabcxaba";
-//        String t = "xabcxabc";
+
 //        String t = "abcdefg";
-    public static String t = "abba";
 //        String t = "abab";
 //        String t = "abcde";
 

@@ -1,4 +1,4 @@
-package util;
+package tree;
 
 public class Node {
     public static final int ARRAY_LENGTH = 27;

@@ -1,6 +1,7 @@
 package util;
 
 public class Strings {
+    public static String test3 = "abcdefghijklmnopqrstuvwxyz";
     public static String test2 = "xabcxabc";
     public static String test1 = "abba";
 

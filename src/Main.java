@@ -213,7 +213,10 @@ public class Main {
         Node currentNode = root;
         Edge currentEdge = null;
         Node lastCreatedInternalNode = null;
-        
+
+        /*
+        A requirement to understanding this algorithm is that at each step, the implicit suffix tree exists for 0..i. 
+        */
         for (int i = 0; i < s.length(); i++) {
             
             char c = s.charAt(i);
@@ -225,144 +228,159 @@ public class Main {
             }
 
             /*
-            Option 1: 
-            
-            Reach a branch point while traversing the string (due to repeats).
+            Two cases:
+            1. Already traversing an edge (would be doing this when repeats start happening).
+            2. Not traversing an edge (will be guaranteed to be at the root node).
             */
-            if (currentEdge != null
-                    &&
-                    c != s.charAt(localCounter + currentEdge.start)) {
 
-                int local = localCounter;
-
-                while (gblCounter > 0) {
-                    // System.out.println(gblCounter);
-                    /*
-                    Skip-jump down the string and nodes, if necessary. 
-                    It happens when the gblCounter indicates that to continue the branching, one much skip down the string to a lower node.
-                    */
-                    if (currentNode.isRoot) {
-                        local = gblCounter;
-                        currentEdge = currentNode.edges[s.charAt(i - local) - 'a'];
-
-                        while (local > (currentEdge.end.end - currentEdge.start)) {
-                            local -= currentEdge.end.end - currentEdge.start;
-                            currentNode = currentEdge.child;
-                            currentEdge = currentNode.edges[s.charAt(i - local) - 'a'];
-                        }
-                    } else {
-                        currentEdge = currentNode.edges[s.charAt(i - local) - 'a'];
-                    }
-
-                    /*
-                    Create the new branch point, which == a new internal node, and copying over children from the existing edge.
-                    */
-                    Node internalNode = new Node();
-                    Edge split = new Edge(currentEdge.start + local, currentEdge.end);
-                    Edge newEdge      = new Edge(i, globalEnd);
-                    
-                    internalNode.edges[s.charAt(
-                            currentEdge.start
-                                    +
-                                    local)
-                            -
-                            'a'] = split;
-                    internalNode.edges[c - 'a'] = newEdge;
-                    internalNode.suffixLink = root;
-
-                    split.child = currentEdge.child;
-                    
-                    currentEdge.child = internalNode;
-                    currentEdge.end = new End(currentEdge.start + local);
-
-                    /*
-                    Create the suffix link.
-                    */
-                    if (lastCreatedInternalNode == null) {
-                        lastCreatedInternalNode = internalNode;
-                    } else {
-                        lastCreatedInternalNode.suffixLink = internalNode;
-                        lastCreatedInternalNode = internalNode;
-                    }
-
-                    /*
-                    nb. 
-                    Reset the last created internal node if the traversal reaches the root, because each link of suffixes must terminate at the root, which means traversing down from the root starts a "new" set of links.
-                    */
-                    if (currentNode.suffixLink.isRoot
-                            &&
-                            !currentNode.isRoot) {
-                        lastCreatedInternalNode = null;
-                    }
-
-                    /*
-                    Traverse the suffix link.
-                    */
-                    currentNode = currentNode.suffixLink;
-
-                    if (isDebug == true)
-                    {
-                        logs.add("Traversed to a Suffix Link. Is it root: " + String.valueOf(currentNode.isRoot));
-                    }
-                    
-                    gblCounter--;
-                }
-
-                /*
-                Create the new node at the root for the new character.
-                */
-                // technically duplicate of line ~224
-                Edge e = new Edge(i, globalEnd);
-                currentNode.edges[c - 'a'] = e;
-
-                /*
-                Reset everything. 
-
-                This is essentially an implementation complexity. 
-                */
-                lastCreatedInternalNode = null;
-                currentEdge = null;
-                localCounter = 0;
-            } 
             /*
-            Option 2: 
-            
-            Find the next character already exists while traversing the string (due to repeats).
+            Case 1.
             */
-            else if (currentEdge != null
-                    &&
-                    c == s.charAt(localCounter + currentEdge.start)) {
-                if (localCounter + currentEdge.start == currentEdge.end.end) {
-                    currentNode = currentEdge.child;
+            if (currentEdge != null)
+            {
+                /*
+                Option 1: 
+
+                Reach a branch point while traversing the string (due to repeats).
+                */
+                if (c != s.charAt(localCounter + currentEdge.start)) 
+                {
+                    while (gblCounter > 0) {
+                        // System.out.println(gblCounter);
+                        /*
+                        Skip-jump down the string and nodes, if necessary. 
+                        It happens when the gblCounter indicates that to continue the branching, one much skip down the string to a lower node.
+                        */
+                        if (currentNode.isRoot) {
+                            localCounter = gblCounter;
+                            currentEdge  = currentNode.edges[s.charAt(i - localCounter) - 'a'];
+
+                            while (localCounter > (currentEdge.end.end - currentEdge.start)) {
+                                localCounter -= currentEdge.end.end - currentEdge.start;
+                                currentNode = currentEdge.child;
+                                currentEdge = currentNode.edges[s.charAt(i - localCounter) - 'a'];
+                            }
+                        } else {
+                            currentEdge = currentNode.edges[s.charAt(i - localCounter) - 'a'];
+                        }
+
+                        /*
+                        Create the new branch point, which == a new internal node, and copying over children from the existing edge.
+                        */
+                        Node internalNode = new Node();
+                        Edge split = new Edge(currentEdge.start + localCounter, currentEdge.end);
+                        Edge newEdge      = new Edge(i, globalEnd);
+
+                        internalNode.edges[s.charAt(
+                                currentEdge.start
+                                        +
+                                        localCounter)
+                                -
+                                'a'] = split;
+                        internalNode.edges[c - 'a'] = newEdge;
+                        internalNode.suffixLink = root;
+
+                        split.child = currentEdge.child;
+
+                        currentEdge.child = internalNode;
+                        currentEdge.end = new End(currentEdge.start + localCounter);
+
+                        /*
+                        Create the suffix link.
+                        */
+                        if (lastCreatedInternalNode == null) {
+                            lastCreatedInternalNode = internalNode;
+                        } else {
+                            lastCreatedInternalNode.suffixLink = internalNode;
+                            lastCreatedInternalNode = internalNode;
+                        }
+
+                        /*
+                        nb. 
+                        Reset the last created internal node if the traversal reaches the root, because each link of suffixes must terminate at the root, which means traversing down from the root starts a "new" set of links.
+                        */
+                        if (currentNode.suffixLink.isRoot
+                                &&
+                                !currentNode.isRoot) {
+                            lastCreatedInternalNode = null;
+                        }
+
+                        /*
+                        Traverse the suffix link.
+                        */
+                        currentNode = currentNode.suffixLink;
+
+                        if (isDebug == true)
+                        {
+                            logs.add("Traversed to a Suffix Link. Is it root: " + String.valueOf(currentNode.isRoot));
+                        }
+
+                        gblCounter--;
+                    }
+
+                    /*
+                    Create the new node at the root for the new character.
+                    */
+                    // technically duplicate of line ~224
+                    Edge e = new Edge(i, globalEnd);
+                    currentNode.edges[c - 'a'] = e;
+
+                    /*
+                    Reset everything. 
+
+                    This is essentially an implementation complexity. 
+                    */
+                    lastCreatedInternalNode = null;
+                    currentEdge = null;
+                    localCounter = 0;
+                } 
+                /*
+                Option 2: 
+
+                Find the next character already exists while traversing the string (due to repeats).
+                */
+                else if (c == s.charAt(localCounter + currentEdge.start)) {
+                    if (localCounter + currentEdge.start == currentEdge.end.end) {
+                        currentNode = currentEdge.child;
+                        currentEdge = currentNode.edges[c - 'a'];
+                        localCounter = 1;
+                    } else {
+                        localCounter++;
+                    }
+
+                    gblCounter++;
+                } 
+            }
+            /*
+            Case 2. (at the root, not traversing an edgee)
+            */
+            else 
+            {
+                /*
+                Option 3: 
+
+                There is no edge for the character.
+                */
+                if (currentNode.edges[c - 'a'] == null) {
+                    Edge e = new Edge(i, globalEnd);
+                    currentNode.edges[c - 'a'] = e;
+                } 
+                /*
+                Option 4: 
+
+                Start traversing the edge for that character since it is there already.
+                */
+                else {
                     currentEdge = currentNode.edges[c - 'a'];
                     localCounter = 1;
-                } else {
-                    localCounter++;
+
+                    gblCounter++;
                 }
-
-                gblCounter++;
-            } 
-            /*
-            Option 3: 
-            
-            There is no edge for the character.
-            */
-            else if (currentNode.edges[c - 'a'] == null) {
-                Edge e = new Edge(i, globalEnd);
-                currentNode.edges[c - 'a'] = e;
-            } 
-            /*
-            Option 4: 
-            
-            Start traversing the edge for that character since it is there already.
-            */
-            else {
-                currentEdge = currentNode.edges[c - 'a'];
-                localCounter = 1;
-
-                gblCounter++;
             }
 
+            /*
+            Update the global end, which adds the character to all existing terminal edges.
+            */
             globalEnd.end = i + 1;
         }
 

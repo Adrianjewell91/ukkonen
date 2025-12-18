@@ -45,23 +45,33 @@ public class Main {
 
     /*
     TESTS
+
+    A sequence of strings comprise the tests, and each string derives from the former according to this way:
+
+    abc|abc|dea|abcabf|abcabcdg.
+
+    String 1 tests basic construction.
+    String 2 tests basic construction with repeats.
+    String 3 tests simple branching. 
+    String 4 tests branching using the suffix link technique.
+    String 5 tests additionally the skip-jump technique that must occur when a suffix traversal reaches the root node, but must traverse down several nodes before continuing the branching.
     */
 
-    // String: abc
+    // String 1: abc
     // /abc
     // /bc
     // /c
     static String s1Test = "/abc\n/bc\n/c\n";
     static String s1 = "abc"; // Simple
 
-    // String: abcabc
+    // String 2: abcabc
     // /abcabc
     // /bcabc
     // /cabc
     static String s2Test = "/abcabc\n/bcabc\n/cabc\n";
     static String s2 = "abcabc"; // Check counter goes up
 
-    // String: abcabcdea
+    // String 3: abcabcdea
     // /abc/abcdea
     // /abc/dea
     // /bc/abcdea
@@ -73,7 +83,7 @@ public class Main {
     static String s3Test = "/abc/abcdea\n/abc/dea\n/bc/abcdea\n/bc/dea\n/c/abcdea\n/c/dea\n/dea\n/ea\n";
     static String s3 = "abcabcdea"; // Check formation of suffix links
 
-    // String: abcabcdeabcabf
+    // String 4: abcabcdeabcabf
     // /ab/c/ab/cdeabcabf
     // /ab/c/ab/f
     // /ab/c/deabcabf
@@ -91,7 +101,7 @@ public class Main {
     static String s4Test = "/ab/c/ab/cdeabcabf\n/ab/c/ab/f\n/ab/c/deabcabf\n/ab/f\n/b/c/ab/cdeabcabf\n/b/c/ab/f\n/b/c/deabcabf\n/b/f\n/c/ab/cdeabcabf\n/c/ab/f\n/c/deabcabf\n/deabcabf\n/eabcabf\n/f\n";
     static String s4 = "abcabcdeabcabf"; // Check traversal of suffix links to do second branching.
 
-    // String: abcabcdeabcabfabcabcdg
+    // String 5: abcabcdeabcabfabcabcdg
     // /ab/c/ab/cd/eabcabfabcabcdg
     // /ab/c/ab/cd/g
     // /ab/c/ab/fabcabcdg
@@ -123,7 +133,7 @@ public class Main {
 
     public static void main(String[] args) {
         /*
-            Confirm structure.
+            Confirms structure.
         */
         for (int i = 0; i < strings.length; i++) {
             // System
@@ -144,23 +154,24 @@ public class Main {
         }
 
         /*
-            Confirm suffix link traversal during extensions of branch points.
+            Confirms suffix link traversal during extensions of branch points.
 
             Example: String s5: abcabcdeabcabfabcabcdg.
 
             In the first traversal we insert the 'd' at index 6: three 'traversals' to the root each time.
 
             In the second traversal we insert the 'f' at index 13: 5 traversals. 
-            The first there use the internal nodes created previously. Then 2 more which go back to the root again.
+            The first three use the internal nodes created previously. Then 2 more which go back to the root again.
 
             In the third traversal, we insert the 'g' at the final index: 7 traversals.
-            The first 3 go through the suffix links created previously.
-            The second 3 go through the suffix links created previously previously.
-            The last 1 creates an internal node on Root->de... from, which goes back to the root. 
+            The first three go through the suffix links created previously.
+            The second three go through the suffix links created previously previously.
+            The last one creates an internal node at root -> de... from which goes back to the root. 
 
-            A special property of the last traversal, is that halfway through the traversal reaches the Root, 
-            but the next branch must happen some node down, so it is required to skip down a few nodes. The last node that was passed through becomes the suffix link entry point for the next round back to root (see the diagram).
+            A special property of the last traversal is it reaches the root halfway through, 
+            but the next branching must happen some nodes down, so it is required to skip down a few nodes. The last node that was passed through becomes the suffix link entry point for the next round back to root (see the diagram).
         */
+        System.out.println("Logs for string: " + s5);
         List<String>  logs = new ArrayList<>();
         build(s5, true, logs);
 
@@ -168,12 +179,12 @@ public class Main {
     }
 
     /*
-     * Ukkonen's Algorithm.
+     * An implementation of Ukkonen's Algorithm.
      * 
      * Overview: Build a suffix tree in O(N) time by optimizing a naive O(N^^3)
      * algorithm.
      *
-     * Naive O(N^^3) algorithm:
+     * The naive O(N^^3) algorithm:
      
         for each substring (0..i) in string:
             build suffix tree:
@@ -197,74 +208,41 @@ public class Main {
         root.isRoot = true;
 
         End globalEnd = new End(0);
-        int counter = 0;
-        int gbl = 0;
+        int localCounter = 0;
+        int gblCounter = 0;
         Node currentNode = root;
         Edge currentEdge = null;
-
+        Node lastCreatedInternalNode = null;
+        
         for (int i = 0; i < s.length(); i++) {
             
             char c = s.charAt(i);
+            // System.out.println("LastcreatedinternalNode: " + String.valueOf(lastCreatedInternalNode == null));
 
             if (isDebug == true)
             {
                 logs.add("Inserting char " + c + ".");
             }
-            
-            Node lastCreatedInternalNode = null;
 
+            /*
+            Option 1: 
+            
+            Reach a branch point while traversing the string (due to repeats).
+            */
             if (currentEdge != null
                     &&
-                    c != s.charAt(counter + currentEdge.start)) {
-                // todo: reset counter here instead?
-                int local = counter;
+                    c != s.charAt(localCounter + currentEdge.start)) {
 
-                while (gbl > 0) {
-                    Node internalNode = new Node();
+                int local = localCounter;
 
-                    Edge splitOffEdge = new Edge(currentEdge.start + local, currentEdge.end);
-                    splitOffEdge.child = currentEdge.child;
-
-                    internalNode.edges[s.charAt(
-                            currentEdge.start
-                                    +
-                                    local)
-                            -
-                            'a'] = splitOffEdge;
-                    internalNode.edges[c - 'a'] = new Edge(i, globalEnd);
-                    internalNode.suffixLink = root;
-
-                    currentEdge.child = internalNode;
-                    currentEdge.end = new End(currentEdge.start + local);
-
-                    if (lastCreatedInternalNode == null) {
-                        lastCreatedInternalNode = internalNode;
-                    } else {
-                        lastCreatedInternalNode.suffixLink = internalNode;
-                        lastCreatedInternalNode = internalNode;
-                    }
-
-                    if (currentNode.suffixLink.isRoot
-                            &&
-                            !currentNode.isRoot) {
-                        lastCreatedInternalNode = null;
-                    }
-
-                    currentNode = currentNode.suffixLink;
-
-                    if (isDebug == true)
-                    {
-                        logs.add("Traversed to a Suffix Link. Is it root: " + String.valueOf(currentNode.isRoot));
-                    }
-                    // this line may not be required
-                    currentEdge = null;
-
-                    gbl--;
-                    if (gbl <= 0)
-                        break;
-
+                while (gblCounter > 0) {
+                    // System.out.println(gblCounter);
+                    /*
+                    Skip-jump down the string and nodes, if necessary. 
+                    It happens when the gblCounter indicates that to continue the branching, one much skip down the string to a lower node.
+                    */
                     if (currentNode.isRoot) {
-                        local = gbl;
+                        local = gblCounter;
                         currentEdge = currentNode.edges[s.charAt(i - local) - 'a'];
 
                         while (local > (currentEdge.end.end - currentEdge.start)) {
@@ -275,38 +253,114 @@ public class Main {
                     } else {
                         currentEdge = currentNode.edges[s.charAt(i - local) - 'a'];
                     }
+
+                    /*
+                    Create the new branch point, which == a new internal node, and copying over children from the existing edge.
+                    */
+                    Node internalNode = new Node();
+                    Edge split = new Edge(currentEdge.start + local, currentEdge.end);
+                    Edge newEdge      = new Edge(i, globalEnd);
+                    
+                    internalNode.edges[s.charAt(
+                            currentEdge.start
+                                    +
+                                    local)
+                            -
+                            'a'] = split;
+                    internalNode.edges[c - 'a'] = newEdge;
+                    internalNode.suffixLink = root;
+
+                    split.child = currentEdge.child;
+                    
+                    currentEdge.child = internalNode;
+                    currentEdge.end = new End(currentEdge.start + local);
+
+                    /*
+                    Create the suffix link.
+                    */
+                    if (lastCreatedInternalNode == null) {
+                        lastCreatedInternalNode = internalNode;
+                    } else {
+                        lastCreatedInternalNode.suffixLink = internalNode;
+                        lastCreatedInternalNode = internalNode;
+                    }
+
+                    /*
+                    nb. 
+                    Reset the last created internal node if the traversal reaches the root, because each link of suffixes must terminate at the root, which means traversing down from the root starts a "new" set of links.
+                    */
+                    if (currentNode.suffixLink.isRoot
+                            &&
+                            !currentNode.isRoot) {
+                        lastCreatedInternalNode = null;
+                    }
+
+                    /*
+                    Traverse the suffix link.
+                    */
+                    currentNode = currentNode.suffixLink;
+
+                    if (isDebug == true)
+                    {
+                        logs.add("Traversed to a Suffix Link. Is it root: " + String.valueOf(currentNode.isRoot));
+                    }
+                    
+                    gblCounter--;
                 }
 
-                if (lastCreatedInternalNode != null) {
-                    lastCreatedInternalNode.suffixLink = root;
-                    lastCreatedInternalNode = null;
-                }
-
-                // technically duplicate to line ~224
+                /*
+                Create the new node at the root for the new character.
+                */
+                // technically duplicate of line ~224
                 Edge e = new Edge(i, globalEnd);
                 currentNode.edges[c - 'a'] = e;
+
+                /*
+                Reset everything. 
+
+                This is essentially an implementation complexity. 
+                */
+                lastCreatedInternalNode = null;
                 currentEdge = null;
-                counter = 0;
-            } else if (currentEdge != null
+                localCounter = 0;
+            } 
+            /*
+            Option 2: 
+            
+            Find the next character already exists while traversing the string (due to repeats).
+            */
+            else if (currentEdge != null
                     &&
-                    c == s.charAt(counter + currentEdge.start)) {
-                if (counter + currentEdge.start == currentEdge.end.end) {
+                    c == s.charAt(localCounter + currentEdge.start)) {
+                if (localCounter + currentEdge.start == currentEdge.end.end) {
                     currentNode = currentEdge.child;
                     currentEdge = currentNode.edges[c - 'a'];
-                    counter = 1;
+                    localCounter = 1;
                 } else {
-                    counter++;
+                    localCounter++;
                 }
 
-                gbl++;
-            } else if (currentNode.edges[c - 'a'] == null) {
+                gblCounter++;
+            } 
+            /*
+            Option 3: 
+            
+            There is no edge for the character.
+            */
+            else if (currentNode.edges[c - 'a'] == null) {
                 Edge e = new Edge(i, globalEnd);
                 currentNode.edges[c - 'a'] = e;
-            } else {
+            } 
+            /*
+            Option 4: 
+            
+            Start traversing the edge for that character since it is there already.
+            */
+            else {
                 currentEdge = currentNode.edges[c - 'a'];
-                counter = 1;
+                localCounter = 1;
 
-                gbl++;
+                gblCounter++;
             }
 
             globalEnd.end = i + 1;
@@ -315,7 +369,6 @@ public class Main {
         return root;
     }
 
-    // test the correct suffix link creation. // maybe do it manually.
     public static void suffixes(Node tree, String path, String s, StringBuilder builder) {
         if (tree == null) {
             // System.out.println(path);

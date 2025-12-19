@@ -136,9 +136,9 @@ public class Main {
             Confirms structure.
         */
         for (int i = 0; i < strings.length; i++) {
-            // System
-            //     .out
-            //     .println("String: " + strings[i]);
+            System
+                .out
+                .println("String: " + strings[i]);
             
             Node          root = build(strings[i], false, null);
             StringBuilder b    = new StringBuilder();
@@ -223,7 +223,7 @@ public class Main {
 
         End globalEnd = new End(0);
         int localCounter = 0;
-        int gblCounter = 0;
+        int peg = 0;
         Node currentNode = root;
         Edge currentEdge = null;
 
@@ -242,32 +242,72 @@ public class Main {
 
             /*
             Two cases:
-            1. Already traversing an edge (would be doing this when repeats start happening).
-            2. Not traversing an edge (will be guaranteed to be at the root node).
+            1. Not traversing an edge (will be guaranteed to be at the root node).
+            2. Already traversing an edge (would be doing this when repeats start happening).
             */
 
             /*
             Case 1.
             */
-            if (currentEdge != null)
+            if (currentEdge == null)
             {
                 /*
                 Option 1: 
 
-                Reach a branch point while traversing the string (due to repeats).
+                There is no edge for the character. aka this character hasn't been seen before.
                 */
-                if (c != s.charAt(localCounter + currentEdge.start)) 
+                if (currentNode.edges[c - 'a'] == null) {
+                    Edge e = new Edge(i, globalEnd);
+                    currentNode.edges[c - 'a'] = e;
+
+                    peg++;
+                } 
+                /*
+                Option 2: 
+
+                Start traversing the edge for that character since it is there already.
+                */
+                else {
+                    currentEdge = currentNode.edges[c - 'a'];
+                    localCounter = 1;
+                }
+            }
+            /*
+            Case 2. There is an active edge...
+            */
+            else
+            {
+                /*
+                Option 1: 
+
+                The next character already exists while traversing the string (due to repeats).
+                */
+                if (c == s.charAt(localCounter + currentEdge.start))
+                {
+                    if (localCounter + currentEdge.start == currentEdge.end.end) {
+                        currentNode = currentEdge.child;
+                        currentEdge = currentNode.edges[c - 'a'];
+                        localCounter = 1;
+                    } else {
+                        localCounter++;
+                    }
+                } 
+                /*
+                Option 2: 
+
+                It's not the next character therefore reached a branch point while traversing the string (due to repeats).
+                */
+                else 
                 {
                     Node lastCreatedInternalNode = null;
-                    
-                    while (gblCounter > 0) {
-                        // System.out.println(gblCounter);
+
+                    while (peg < i) {
                         /*
                         Skip-jump down the string and nodes, if necessary. 
                         It happens when the gblCounter indicates that to continue the branching, one much skip down the string to a lower node.
                         */
                         if (currentNode.isRoot) {
-                            localCounter = gblCounter;
+                            localCounter = i - peg;
                             currentEdge  = currentNode.edges[s.charAt(i - localCounter) - 'a'];
 
                             while (localCounter > (currentEdge.end.end - currentEdge.start)) {
@@ -331,7 +371,7 @@ public class Main {
                             logs.add(String.valueOf(currentNode.isRoot));
                         }
 
-                        gblCounter--;
+                        peg++;
                     }
 
                     /*
@@ -342,61 +382,26 @@ public class Main {
                     currentNode.edges[c - 'a'] = e;
 
                     /*
+                    Essentially: the next possible peg will be i+1 because at i+1 there might be a repeat and so the peg indeed gets held at i+1.
+                    */
+                    peg++;
+
+                    /*
                     Reset everything. 
 
-                    This is essentially an implementation complexity. 
+                    This is an implementation complexity. The local counter needs to be reset and also currentEdge to null.
+                    nb. currentNode is guaranteed to be root by here.
                     */
                     currentEdge = null;
                     localCounter = 0;
                 } 
-                /*
-                Option 2: 
-
-                Find the next character already exists while traversing the string (due to repeats).
-                */
-                else if (c == s.charAt(localCounter + currentEdge.start)) {
-                    if (localCounter + currentEdge.start == currentEdge.end.end) {
-                        currentNode = currentEdge.child;
-                        currentEdge = currentNode.edges[c - 'a'];
-                        localCounter = 1;
-                    } else {
-                        localCounter++;
-                    }
-
-                    gblCounter++;
-                } 
             }
-            /*
-            Case 2. (at the root, not traversing an edgee)
-            */
-            else 
-            {
-                /*
-                Option 3: 
 
-                There is no edge for the character.
-                */
-                if (currentNode.edges[c - 'a'] == null) {
-                    Edge e = new Edge(i, globalEnd);
-                    currentNode.edges[c - 'a'] = e;
-                } 
-                /*
-                Option 4: 
-
-                Start traversing the edge for that character since it is there already.
-                */
-                else {
-                    currentEdge = currentNode.edges[c - 'a'];
-                    localCounter = 1;
-
-                    gblCounter++;
-                }
-            }
 
             /*
             Update the global end, which adds the character to all existing terminal edges.
             */
-            globalEnd.end = i + 1;
+            globalEnd.end++;
         }
 
         return root;

@@ -171,11 +171,25 @@ public class Main {
             A special property of the last traversal is it reaches the root halfway through, 
             but the next branching must happen some nodes down, so it is required to skip down a few nodes. The last node that was passed through becomes the suffix link entry point for the next round back to root (see the diagram).
         */
-        System.out.println("Logs for string: " + s5);
+        System.out.println("Logs for string, did it traverse the suffix links correctly: " + s5);
         List<String>  logs = new ArrayList<>();
         build(s5, true, logs);
-
-        System.out.println(String.join("\n", logs));
+        String[] traversalsToRoot = {
+            "true","true","true",
+            "false","false","true","true","true",
+            "false","false","true","false","false","true","true"
+        };
+        
+        int j = 0;
+        // System.out.println(String.join("\n", logs));
+        for (String log : logs)
+        {
+          if (log.equals("true") || log.equals("false"))
+          {
+              System.out.println(traversalsToRoot[j].equals(log));
+              j++;
+          }
+        }
     }
 
     /*
@@ -212,7 +226,6 @@ public class Main {
         int gblCounter = 0;
         Node currentNode = root;
         Edge currentEdge = null;
-        Node lastCreatedInternalNode = null;
 
         /*
         A requirement to understanding this algorithm is that at each step, the implicit suffix tree exists for 0..i. 
@@ -245,6 +258,8 @@ public class Main {
                 */
                 if (c != s.charAt(localCounter + currentEdge.start)) 
                 {
+                    Node lastCreatedInternalNode = null;
+                    
                     while (gblCounter > 0) {
                         // System.out.println(gblCounter);
                         /*
@@ -312,7 +327,8 @@ public class Main {
 
                         if (isDebug == true)
                         {
-                            logs.add("Traversed to a Suffix Link. Is it root: " + String.valueOf(currentNode.isRoot));
+                            logs.add("Traversed to a Suffix Link. Is it to the root?");
+                            logs.add(String.valueOf(currentNode.isRoot));
                         }
 
                         gblCounter--;
@@ -330,7 +346,6 @@ public class Main {
 
                     This is essentially an implementation complexity. 
                     */
-                    lastCreatedInternalNode = null;
                     currentEdge = null;
                     localCounter = 0;
                 } 
